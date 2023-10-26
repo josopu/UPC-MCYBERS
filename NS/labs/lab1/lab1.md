@@ -10,7 +10,7 @@
 ## 3.1. Prepare your virtualized environment
 
 After creating the two virtual machines, I created a NAT network where they could communicate with each other throught the virtual network.
-| ![](1.png) | 
+| ![](img/1.png) | 
 |:--:| 
 | *Image 1* |
 
@@ -32,7 +32,7 @@ As I prefered to use the network for file transfers, I had to enable `ssh` inste
 
 <br>
 
-| ![](2.png) | 
+| ![](img/2.png) | 
 |:--:| 
 | *Image 2* |
 
@@ -45,7 +45,7 @@ Then we shared the public via `scp` (arbitrary program, as the sharing method wa
 
 <br>
 
-| ![](3.png) | 
+| ![](img/3.png) | 
 |:--:| 
 | *Image 3* |
 
@@ -61,7 +61,7 @@ We check that the file is the same with `sha256sum`.
 
 <br>
 
-| ![](4.png) | 
+| ![](img/4.png) | 
 |:--:| 
 | *Image 4* |
 
