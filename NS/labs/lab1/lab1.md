@@ -134,5 +134,6 @@ openssl pkeyutl -derive -inkey dhkeyAlice.pem -peerkey dhpubBob.pem -out secret.
 To generate a session key, we must agree what PRF we use. Let's just say we use HMAC-SHA256:
 
 ```bash
-openssl dgst -sha256 -mac HMAC -macopt hexkey:$(cat secret.bin) -out session_key.bin
+xxd -p secret.bin > secret.hex  # As we have the secret in binary, we need it in hex (it is not correct as it includes newlines in this file but as long as they both generate the key in the same way, it will always work)
+echo "$(cat nonceAlice),$(cat nonceBob),enc,1,$(cat secret.bin)" | openssl dgst -sha3-256 -hex | awk '{print $2}' > k_enc_A_B.hex
 ```
