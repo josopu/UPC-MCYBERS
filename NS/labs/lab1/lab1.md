@@ -130,3 +130,9 @@ Create the shared secret:
 ```bash
 openssl pkeyutl -derive -inkey dhkeyAlice.pem -peerkey dhpubBob.pem -out secret.bin
 ```
+
+To generate a session key, we must agree what PRF we use. Let's just say we use HMAC-SHA256:
+
+```bash
+openssl dgst -sha256 -mac HMAC -macopt hexkey:$(cat secret.bin) -out session_key.bin
+```
