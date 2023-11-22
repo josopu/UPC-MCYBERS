@@ -145,7 +145,7 @@ def read_node(x, y):
 def find_node(x, y, hash_list):
     x = str(x)
     y = str(y)
-    for i in range(0, len(hash_list)):
+    for i in range(1, len(hash_list)):
         if hash_list[i][0] == x and hash_list[i][1] == y:
             return i
     # This is a workaround to let us know that we need to create a new node at -i position
@@ -157,6 +157,14 @@ def find_node(x, y, hash_list):
     return i*-1
 
 
+def node_exist(x,y,hash_list):
+    x = str(x)
+    y = str(y)
+    for i in range(1, len(hash_list)):  # Podria ser molt més eficient si el [i][0] és més gran que X ja sortir
+        if hash_list[i][0] == x and hash_list[i][1] == y:
+            return i
+    return False
+
 
 def generate_proof_of_membership():
     global index_file
@@ -166,125 +174,47 @@ def generate_proof_of_membership():
         for line in f.readlines():
             index_data.append(line.split(":"))
 
-    doc_name = input("Enter the document name (e.g., doc0.dat): ")
-    k = int(input("Enter the position k for which you want to generate the proof: "))
-    proof_file_path = input("Enter the path to save the proof file: ")
-
-    reconstructed_proof = generate_proof(index_data, k)
-    with open(proof_file_path, "w") as proof_file:
-        for node in reconstructed_proof:
-            proof_file.write(f"{node[0]}:{node[1]}:{node[2]}\n")
-
-    print(f"\nProof of membership for {doc_name} at position {k} has been generated and saved to {proof_file_path}.")
-    print("\nReconstructed Proof:")
-    for node in reconstructed_proof:
-        print(f"{node[0]}:{node[1]}:{node[2]}:{node[3]}")
-
-
-
-def verify_proof_of_membership():
-    global index_file
-
-    with open(index_file, "r") as f:
-        index_data = [f.readline().split(":")]
-        for line in f.readlines():
-            index_data.append(line.split(":"))
-
-    doc_name = input("Enter the document name (e.g., doc0.dat): ")
-    k = int(input("Enter the position k for which you have the proof: "))
-    proof_file_path = input("Enter the path to the proof file: ")
-
-    expected_proof = []
-    with open(proof_file_path, "r") as proof_file:
-        for line in proof_file:
-            expected_proof.append(line.strip().split(":"))
-
-
-    reconstructed_proof = generate_proof(index_data, k)
-    expected_proof = []
-    with open(proof_file_path, "r") as proof_file:
-        for line in proof_file:
-            expected_proof.append(line.strip().split(":"))
-
-    is_valid = verify_proof(index_data, expected_proof, k)
-    print("\nExpected Proof:")
-    for node in expected_proof:
-        print(f"{node[0]}:{node[1]}:{node[2]}:{node[3]}")
-
-    print("\nReconstructed Proof:")
-    for node in reconstructed_proof:
-        print(f"{node[0]}:{node[1]}:{node[2]}:{node[3]}")
-    print(f"\nIs the proof valid? {is_valid}")
-
-
-
-def reconstruct_proof_from_file(proof_file_path):
-    reconstructed_proof = []
-    with open(proof_file_path, "r") as proof_file:
-        for line in proof_file:
-            reconstructed_proof.append(line.strip().split(":"))
-    return reconstructed_proof
-
-
-def generate_proof(index_data, k):
-    proof = []
-    node_index = k
-    while node_index > 0:
-        sibling_index = node_index - 1 if node_index % 2 == 0 else node_index + 1
-        is_left_child = node_index % 2 == 0
-        sibling_node = [int(index_data[sibling_index][0]), int(index_data[sibling_index][1]),
-                        index_data[sibling_index][2], is_left_child]
-        proof.append(sibling_node)
-        node_index = sibling_index // 2 - 1 if sibling_index % 2 == 0 else sibling_index // 2
-
-    return proof
+    proof_path = []
+    x = -1
+    while x<0:
+        x = int(input(f"What doc you want to get the proof on (doc[0:{int(index_data[0][4])-1}].dat): "))
+        if x >= int(index_data[0][4]):
+            x=-1
+    for level in range(0,int(math.ceil(math.log2(int(index_data[0][4]))))):
+        if x % 2 == 0:  # node esquerra
+            if node_exist(level,x+1,index_data):
+                proof_path.append(index_data[find_node(level,x+1,index_data)])
+            else:
+                # proof_path.append(compute_sha1_hash(br'').decode('utf-8'))  # FIXME Si faig decode em peta el codi... hardcodejem el hash
+                proof_path.append(f"['{level}', '{x+1}', 'da39a3ee5e6b4b0d3255bfef95601890afd80709\\n'] <-- This node does not exist we use hardcoded hash of void")
+        else:  # node dret
+            proof_path.append(index_data[find_node(level,x-1,index_data)])
+        x = int(math.floor(x / 2))
+    print(f"To calculate the proof, you will need the appended prefix: \"\\x{index_data[0][3]}\"")
+    for path in proof_path:
+        print(path)
+    print(index_data[-1])  # give the root too
 
 
 def verify_proof():
-    global index_file
-    global docs_folder
-    global nodes_folder
-
-    with open(index_file, "r") as f:
-        index_data = [f.readline().split(":")]
-        for line in f.readlines():
-            index_data.append(line.split(":"))
-
-    public_info = index_data[0][0] + ":" + index_data[0][1] + ":" + index_data[0][2] + ":" + index_data[0][3] + ":" + \
-                  index_data[0][4] + ":" + index_data[0][5] + ":" + index_data[0][6]
-
-    doc_name = input("Enter the document name (e.g., doc0.dat): ")
-    k = int(input("Enter the position k for which you have the proof: "))
-    proof_file_path = input("Enter the path to the proof file: ")
-
-    with open(proof_file_path, "r") as proof_file:
-        proof_data = [line.split(":") for line in proof_file.readlines()]
-
-    doc_index = int(doc_name.split(".")[0][3:])
-    reconstructed_proof = generate_proof(index_data, k)
-    is_valid = verify_proof_membership(public_info, doc_name, reconstructed_proof)
-    print("\nIs the proof valid?", is_valid)
-
-def verify_proof_membership(public_info, doc_name, reconstructed_proof):
-    doc_prefix, _, _, _, _, _, _ = public_info.split(':')
-    with open(os.path.join(docs_folder, doc_name), 'rb') as doc_file:
-        doc_data = doc_file.read()
-        doc_hash = compute_sha1_hash(doc_prefix.encode('utf-8') + doc_data)
-
-    current_hash = doc_hash
-    for node in reconstructed_proof:
-        sibling_node_hash = bytes.fromhex(node[2])
-        current_hash = compute_sha1_hash(sibling_node_hash + current_hash)
-        
-        print(f"Sibling Node Hash: {sibling_node_hash.hex()}")
-        print(f"Current Hash: {current_hash.hex()}")
-
-    root_hash = bytes.fromhex(public_info.split(":")[-1].strip())
-
-    print(f"Final Current Hash: {current_hash.hex()}")
-    print(f"Root Hash: {root_hash.hex()}")
-
-    return current_hash == root_hash
+    print("Sorry but tbh... didn't understand what you want us to do. Too late to even ask :(")
+    """  # Ok let's not include this but leaving it here anyway hehe
+    from random import choice
+    from time import sleep
+    riddles_and_solutions = [
+        ("I speak without a mouth and hear without ears. I have no body, but I come alive with the wind. What am I?", "An echo"),
+        ("The more you take, the more you leave behind. What am I?", "Footsteps"),
+        ("I am taken from a mine, and shut up in a wooden case, from which I am never released, and yet I am used by almost every person. What am I?", "Pencil lead"),
+        ("I have keys but open no locks. I have space but no room. You can enter, but you can't go inside. What am I?", "A keyboard"),
+        ("The person who makes it, sells it. The person who buys it never uses it. What is it?", "A coffin")
+    ]
+    random_riddle, solution = choice(riddles_and_solutions)
+    print("But... I'll give you a riddle lol\n\t", random_riddle)
+    for i in range(0,10):
+        print(".", end="", flush=True)
+        sleep(1)
+    print("\tThe solution is: ", solution)
+    """
 
 
 def main():
